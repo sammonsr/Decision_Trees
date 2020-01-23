@@ -6,6 +6,7 @@
 # Your tasks: Complete the train() and predict() methods of the 
 # DecisionTreeClassifier 
 ##############################################################################
+import itertools
 import math
 
 import numpy as np
@@ -28,7 +29,7 @@ class DecisionTreeClassifier(object):
         Predicts the class label of samples X
     
     """
-    num_buckets = 2
+    NUM_BUCKETS = 2
 
     def __init__(self):
         self.is_trained = False
@@ -147,12 +148,44 @@ class DecisionTreeClassifier(object):
         return best_feature
 
     # HELPPPPPP
-    def find_best_split(self, dataset, i):
+    def find_best_split(self, dataset, column):
         parent_entropy = self.h(dataset)
 
-        sorted_col = set(sorted(dataset[:,i]))
+        sorted_col = set(dataset[:, column])
 
-        for val in sorted_col:
+        possible_splits = list(itertools.combinations(sorted_col, self.NUM_BUCKETS - 1))
+
+        for split in possible_splits:
+            split = sorted(list(split))
+            buckets = self.perform_split(dataset, column, split)
+             # calculate IG
+
+    def perform_split(self, data, column, split):
+        buckets = []
+
+        # First bucket (upper bounded)
+        buckets.append([i for i in data[column] if i <= split[0]])
+
+        # Intermediate buckets (upper and lower bounded)
+        for index in range(1, len(split)):
+            lower_bound = split[index - 1]
+            upper_bound = split[index]
+            buckets.append([i for i in data[column] if lower_bound < i <= upper_bound])
+
+        # Last bucket (lower bound)
+        buckets.append([i for i in data[column] if i > split[len(split) - 1]])
+
+        return buckets
+
+if __name__ == "__main__":
+    x = DecisionTreeClassifier()
+    print(x.perform_split([list(range(10))], 0, [3,6]))
+
+
+
+
+
+
 
 
 
