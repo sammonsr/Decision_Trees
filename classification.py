@@ -164,22 +164,23 @@ class DecisionTreeClassifier(object):
         buckets = []
 
         # First bucket (upper bounded)
-        buckets.append([i for i in data[column] if i <= split[0]])
+        buckets.append([i for i in data if i[column] <= split[0]])
 
         # Intermediate buckets (upper and lower bounded)
         for index in range(1, len(split)):
             lower_bound = split[index - 1]
             upper_bound = split[index]
-            buckets.append([i for i in data[column] if lower_bound < i <= upper_bound])
+            buckets.append([i for i in data if lower_bound < i[column] <= upper_bound])
 
         # Last bucket (lower bound)
-        buckets.append([i for i in data[column] if i > split[len(split) - 1]])
+        buckets.append([i for i in data if i[column] > split[len(split) - 1]])
 
         return buckets
 
 if __name__ == "__main__":
     x = DecisionTreeClassifier()
-    print(x.perform_split([list(range(10))], 0, [3,6]))
+    print([list(range(10)), list(range(10,20))])
+    print(x.perform_split([list(range(10)), list(range(10,20))], 9, [3,6]))
 
 
 
