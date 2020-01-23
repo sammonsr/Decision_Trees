@@ -11,6 +11,25 @@ import math
 
 import numpy as np
 
+from tree import Leaf, Intermediate
+
+
+def generate_partitioning(bounds):
+    partitioning = []
+
+    # First partition (upper bounded)
+    partitioning.append(lambda a: a <= bounds[0])
+
+    # Intermediate partitions (upper and lower bounded)
+    for i in range(1, len(bounds)):
+        if i == len(bounds) - 1:
+            partitioning.append(lambda a: bounds[i] < a <= bounds[i])
+
+    # Last partition (lower bounded)
+    partitioning.append(lambda a: a > bounds[0])
+
+    return partitioning
+
 
 class DecisionTreeClassifier(object):
     """
@@ -33,8 +52,7 @@ class DecisionTreeClassifier(object):
 
     def __init__(self):
         self.is_trained = False
-    
-    
+
     def train(self, x, y):
         """ Constructs a decision tree classifier from data
         
@@ -52,25 +70,20 @@ class DecisionTreeClassifier(object):
             A copy of the DecisionTreeClassifier instance
         
         """
-        
+
         # Make sure that x and y have the same number of instances
         assert x.shape[0] == len(y), \
             "Training failed. x and y must have the same number of instances."
-        
-        
 
         #######################################################################
         #                 ** TASK 2.1: COMPLETE THIS METHOD **
         #######################################################################
-        
-        
-        
+
         # set a flag so that we know that the classifier has been trained
         self.is_trained = True
-        
+
         return self
-    
-    
+
     def predict(self, x):
         """ Predicts a set of samples using the trained DecisionTreeClassifier.
         
@@ -88,27 +101,50 @@ class DecisionTreeClassifier(object):
             An N-dimensional numpy array containing the predicted class label
             for each instance in x
         """
-        
+
         # make sure that classifier has been trained before predicting
         if not self.is_trained:
             raise Exception("Decision Tree classifier has not yet been trained.")
-        
+
         # set up empty N-dimensional vector to store predicted labels 
         # feel free to change this if needed
         predictions = np.zeros((x.shape[0],), dtype=np.object)
-        
-        
+
         #######################################################################
         #                 ** TASK 2.2: COMPLETE THIS METHOD **
         #######################################################################
-        
-    
+
         # remember to change this if you rename the variable
         return predictions
 
+    def build_tree(self, dataset, root=None):
+        if root is None:
+            root = Intermediate(None, [])
+
+        # do all samples have same label
+        class_index = len(dataset[0]) - 1
+        all_same_class = all([d[class_index] == dataset[0][class_index] for d in dataset])
+
+        if all_same_class:
+            class_value = dataset[0][class_index]
+            return Leaf(class_value)
+
+        best_column = self.find_best_attribute(dataset)
+        best_partitioning = self.find_best_partitioning(dataset, best_column)
+        children_datasets = self.perform_partitioning(dataset, best_column, best_partitioning)
+
+        for i in range(len(children_datasets)):
+            child_dataset = children_datasets[i]
+
+            intermediate = Intermediate(best_partitioning[i], [])
+            intermediate.add_child(self.build_tree(child_dataset, intermediate))
+            root.add_child(intermediate)
+
+        return root
+
     # Calculate entropy for samples
     def h(self, samples):
-        labels = set(samples[:,-1])
+        labels = set(samples[:, -1])
         sum = 0
 
         for label in labels:
@@ -131,15 +167,15 @@ class DecisionTreeClassifier(object):
     def info_gain(self, parent_entropy, children, num_samples):
         return parent_entropy - self.h_prime(children, num_samples)
 
-    # Return best node to split on
-    def find_best_node(self, dataset):
+    # Return best node to partition on
+    def find_best_attribute(self, dataset):
         num_features = len(dataset[0]) - 1
         best_info_gain = 0
         best_feature = -1
 
         # Iterate through every attribute in dataset
-        for i in num_features:
-            buckets = self.find_best_split(dataset, i)
+        for i in range(num_features):
+            buckets = self.find_best_partitioning(dataset, i)
             info_gain = self.info_gain(dataset, buckets, len(dataset))
             if info_gain > best_info_gain:
                 best_info_gain = info_gain
@@ -147,50 +183,47 @@ class DecisionTreeClassifier(object):
 
         return best_feature
 
-    # HELPPPPPP
-    def find_best_split(self, dataset, column):
+    def find_best_partitioning(self, dataset, column):
+        assert column < len(dataset[0])
+
         parent_entropy = self.h(dataset)
 
         sorted_col = set(dataset[:, column])
 
-        possible_splits = list(itertools.combinations(sorted_col, self.NUM_BUCKETS - 1))
+        possible_partitioning_bounds = list(itertools.combinations(sorted_col, self.NUM_BUCKETS - 1))
 
-        for split in possible_splits:
-            split = sorted(list(split))
-            buckets = self.perform_split(dataset, column, split)
-             # calculate IG
+        possible_partitionings = [generate_partitioning(bounds) for bounds in possible_partitioning_bounds]
 
-    def perform_split(self, data, column, split):
-        buckets = []
 
-        # First bucket (upper bounded)
-        buckets.append([i for i in data if i[column] <= split[0]])
+        best_ig = -1
+        best_partitioning = []
 
-        # Intermediate buckets (upper and lower bounded)
-        for index in range(1, len(split)):
-            lower_bound = split[index - 1]
-            upper_bound = split[index]
-            buckets.append([i for i in data if lower_bound < i[column] <= upper_bound])
+        for partitioning in possible_partitionings:
+            buckets = self.perform_partitioning(dataset, column, partitioning)
 
-        # Last bucket (lower bound)
-        buckets.append([i for i in data if i[column] > split[len(split) - 1]])
+            ig = self.info_gain(parent_entropy, buckets, len(dataset))
+
+            if ig > best_ig:
+                best_ig = ig
+                best_partitioning = partitioning
+
+        return best_partitioning
+
+    def perform_partitioning(self, data, column, partitioning):
+        assert self.NUM_BUCKETS == len(partitioning)
+
+        buckets = [[] for _ in range(self.NUM_BUCKETS)]
+
+        for i in range(len(data)):
+            for in_partition in partitioning:
+                if in_partition(data[i][column]):
+                    buckets[i].append(data[i])
 
         return buckets
 
+
 if __name__ == "__main__":
     x = DecisionTreeClassifier()
-    print([list(range(10)), list(range(10,20))])
-    print(x.perform_split([list(range(10)), list(range(10,20))], 9, [3,6]))
-
-
-
-
-
-
-
-
-
-
-
-        
-
+    data = [list(range(5)), list(range(5, 10))]
+    partitioning = generate_partitioning([100])
+    print(x.perform_partitioning(data, 4, partitioning))
