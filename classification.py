@@ -3,8 +3,8 @@
 # Coursework 1 Skeleton code
 # Prepared by: Josiah Wang
 #
-# Your tasks: Complete the train() and predict() methods of the 
-# DecisionTreeClassifier 
+# Your tasks: Complete the train() and predict() methods of the
+# DecisionTreeClassifier
 ##############################################################################
 import itertools
 import math
@@ -18,15 +18,15 @@ def generate_partitioning(bounds):
     partitioning = []
 
     # First partition (upper bounded)
-    partitioning.append(lambda a: a <= bounds[0])
+    partitioning.append(lambda a: a < bounds[0])
 
     # Intermediate partitions (upper and lower bounded)
     for i in range(1, len(bounds)):
         if i == len(bounds) - 1:
-            partitioning.append(lambda a: bounds[i] < a <= bounds[i])
+            partitioning.append(lambda a: bounds[i - 1] <= a < bounds[i])
 
     # Last partition (lower bounded)
-    partitioning.append(lambda a: a > bounds[0])
+    partitioning.append(lambda a: a >= bounds[len(bounds) - 1])
 
     return partitioning
 
@@ -34,41 +34,41 @@ def generate_partitioning(bounds):
 class DecisionTreeClassifier(object):
     """
     A decision tree classifier
-    
+
     Attributes
     ----------
     is_trained : bool
         Keeps track of whether the classifier has been trained
-    
+
     Methods
     -------
     train(X, y)
         Constructs a decision tree from data X and label y
     predict(X)
         Predicts the class label of samples X
-    
+
     """
-    NUM_BUCKETS = 2
+    NUM_BUCKETS = 3
 
     def __init__(self):
         self.is_trained = False
 
     def train(self, x, y):
         """ Constructs a decision tree classifier from data
-        
+
         Parameters
         ----------
         x : numpy.array
-            An N by K numpy array (N is the number of instances, K is the 
+            An N by K numpy array (N is the number of instances, K is the
             number of attributes)
         y : numpy.array
             An N-dimensional numpy array
-        
+
         Returns
         -------
         DecisionTreeClassifier
             A copy of the DecisionTreeClassifier instance
-        
+
         """
 
         # Make sure that x and y have the same number of instances
@@ -86,15 +86,15 @@ class DecisionTreeClassifier(object):
 
     def predict(self, x):
         """ Predicts a set of samples using the trained DecisionTreeClassifier.
-        
+
         Assumes that the DecisionTreeClassifier has already been trained.
-        
+
         Parameters
         ----------
         x : numpy.array
-            An N by K numpy array (N is the number of samples, K is the 
+            An N by K numpy array (N is the number of samples, K is the
             number of attributes)
-        
+
         Returns
         -------
         numpy.array
@@ -106,7 +106,7 @@ class DecisionTreeClassifier(object):
         if not self.is_trained:
             raise Exception("Decision Tree classifier has not yet been trained.")
 
-        # set up empty N-dimensional vector to store predicted labels 
+        # set up empty N-dimensional vector to store predicted labels
         # feel free to change this if needed
         predictions = np.zeros((x.shape[0],), dtype=np.object)
 
@@ -209,21 +209,24 @@ class DecisionTreeClassifier(object):
 
         return best_partitioning
 
-    def perform_partitioning(self, data, column, partitioning):
+    def perform_partitioning(self, dataset, column, partitioning):
         assert self.NUM_BUCKETS == len(partitioning)
 
         buckets = [[] for _ in range(self.NUM_BUCKETS)]
 
-        for i in range(len(data)):
-            for in_partition in partitioning:
-                if in_partition(data[i][column]):
-                    buckets[i].append(data[i])
+        for i in range(len(dataset)):
+            for j in range(len(partitioning)):
+                in_partition = partitioning[j]
+                if in_partition(dataset[i][column]):
+                    buckets[j].append(dataset[i])
 
         return buckets
 
 
 if __name__ == "__main__":
     x = DecisionTreeClassifier()
-    data = [list(range(5)), list(range(5, 10))]
-    partitioning = generate_partitioning([100])
-    print(x.perform_partitioning(data, 4, partitioning))
+    data = [[i] for i in range(10)]
+    print(data)
+    print()
+    partitioning = generate_partitioning([4, 7])
+    print(x.perform_partitioning(data, 0, partitioning))
