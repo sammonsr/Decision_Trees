@@ -12,6 +12,7 @@ import math
 import numpy as np
 
 from tree import Leaf, Intermediate
+from visualiser import Visualiser
 
 
 def generate_partitioning(bounds):
@@ -96,6 +97,9 @@ class DecisionTreeClassifier(object):
 
         # set a flag so that we know that the classifier has been trained
         self.is_trained = True
+
+        vis = Visualiser(self.decision_tree)
+        vis.create_plot()
 
         return self
 
