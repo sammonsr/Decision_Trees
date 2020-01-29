@@ -75,9 +75,9 @@ class DecisionTreeClassifier(object):
         assert x.shape[0] == len(y), \
             "Training failed. x and y must have the same number of instances."
 
-        #######################################################################
-        #                 ** TASK 2.1: COMPLETE THIS METHOD **
-        #######################################################################
+        dataset = np.concatenate((x, np.array([y]).T) , axis=1)
+
+        decision_tree = self.build_tree(dataset)
 
         # set a flag so that we know that the classifier has been trained
         self.is_trained = True
@@ -188,6 +188,7 @@ class DecisionTreeClassifier(object):
 
         parent_entropy = self.h(dataset)
 
+        # We want a list not a set? np.distinct? 
         sorted_col = set(dataset[:, column])
 
         possible_partitioning_bounds = list(itertools.combinations(sorted_col, self.NUM_BUCKETS - 1))
