@@ -31,6 +31,10 @@ def generate_partitioning(bounds):
     return partitioning
 
 
+def create_tree():
+    return Intermediate([], -1)
+
+
 class DecisionTreeClassifier(object):
     """
     A decision tree classifier
@@ -87,8 +91,8 @@ class DecisionTreeClassifier(object):
         y = [reverse_dict[label] for label in y]
 
         dataset = np.concatenate((x, np.array([y]).T), axis=1)
-
-        self.decision_tree = self.build_tree(dataset)
+        self.decision_tree = create_tree()
+        self.build_tree(dataset, self.decision_tree)
 
         # set a flag so that we know that the classifier has been trained
         self.is_trained = True
@@ -124,28 +128,21 @@ class DecisionTreeClassifier(object):
         root = self.decision_tree
         return [self.label_dict[self.traverse_tree(row, root)] for row in x]
 
-    def traverse_tree(self, row, parent_node):
-        value = row[parent_node.attr_index]
-        if type(parent_node) == Leaf:
-            return parent_node.value
+    def traverse_tree(self, row, current_node):
+        value = row[current_node.attr_index]
+        if type(current_node) is Leaf:
+            return current_node.value
 
-        for intermediate in parent_node.children:
-            if intermediate.condition(value):
-                self.traverse_tree(row, intermediate)
-                break
+        print("**********************")
+        print("Children:", current_node.children)
+        for i in range(len(current_node.children)):
+            child = current_node.children[i]
+            print("Condition:", current_node.branch_conditions[i](value))
+            if current_node.branch_conditions[i](value):
+                print("Recurse")
+                return self.traverse_tree(row, child)
 
-    def build_tree(self, dataset, root=None):
-        if root is None:
-            root = Intermediate(None, [], -1)
-
-        # do all samples have same label
-        class_index = len(dataset[0]) - 1
-        all_same_class = all([d[class_index] == dataset[0][class_index] for d in dataset])
-
-        if all_same_class:
-            class_value = dataset[0][class_index]
-            return Leaf(class_value)
-
+    def build_tree(self, dataset, root):
         best_column = self.find_best_attribute(dataset)
         best_partitioning = self.find_best_partitioning(dataset, best_column)
         children_datasets = self.perform_partitioning(dataset, best_column, best_partitioning)
@@ -153,11 +150,20 @@ class DecisionTreeClassifier(object):
         for i in range(len(children_datasets)):
             child_dataset = children_datasets[i]
 
-            intermediate = Intermediate(best_partitioning[i], [], i)
-            intermediate.add_child(self.build_tree(child_dataset, intermediate))
-            root.add_child(intermediate)
+            # do all samples have same label - Leaf case
+            class_index = len(dataset[0]) - 1
+            all_same_class = all([d[class_index] == child_dataset[0][class_index] for d in child_dataset])
 
-        return root
+            if all_same_class:
+                class_value = child_dataset[0][class_index]
+                root.add_child(Leaf(class_value), best_partitioning[i])
+                return
+
+            # Non-Leaf case
+            intermediate = Intermediate([], i)
+            root.add_child(intermediate, best_partitioning[i])
+
+            self.build_tree(child_dataset, intermediate)
 
     # Calculate entropy for samples
     def h(self, samples):

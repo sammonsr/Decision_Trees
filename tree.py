@@ -7,13 +7,14 @@ class Leaf(Node):
 
 
 class Intermediate(Node):
-    def __init__(self, condition, children, attr_index):
-        self.condition = condition
+    def __init__(self, children, attr_index):
+        self.branch_conditions = []
         self.children = children
         self.attr_index = attr_index
 
-    def add_child(self, child):
+    def add_child(self, child, condition):
         self.children.append(child)
+        self.branch_conditions.append(condition)
 
     def pass_condition(self, value):
         return self.condition(value)
