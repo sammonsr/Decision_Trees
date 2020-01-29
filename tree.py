@@ -7,9 +7,10 @@ class Leaf(Node):
 
 
 class Intermediate(Node):
-    def __init__(self, condition, children):
+    def __init__(self, condition, children, attr_index):
         self.condition = condition
         self.children = children
+        self.attr_index = attr_index
 
     def add_child(self, child):
         self.children.append(child)
