@@ -129,7 +129,6 @@ class DecisionTreeClassifier(object):
     def build_tree(self, dataset, root):
         best_column = self.find_best_attribute(dataset)
         best_partitioning = self.find_best_partitioning(dataset, best_column)
-        print("145", len(best_partitioning))
         children_datasets = self.perform_partitioning(dataset, best_column, best_partitioning)
 
         for i in range(len(children_datasets)):
@@ -184,9 +183,6 @@ class DecisionTreeClassifier(object):
         # Iterate through every attribute in dataset
         for i in range(num_features):
             partitioning = self.find_best_partitioning(dataset, i)
-            print("****************")
-            print("200", len(partitioning))
-            print(dataset)
             buckets = self.perform_partitioning(dataset, i, partitioning)
             info_gain = self.info_gain(self.h(dataset), buckets, len(dataset))
             if info_gain > best_info_gain:
@@ -200,14 +196,12 @@ class DecisionTreeClassifier(object):
 
     def generate_partitioning(self, bounds):
         partitioning = []
-        print(self.label_dict)
 
         # First partition (upper bounded)
         partitioning.append(Condition(lambda a: a < bounds[0], "x < {}".format(bounds[0])))
 
         # Intermediate partitions (upper and lower bounded)
         for i in range(1, len(bounds)):
-            print(bounds)
             if i == len(bounds) - 1:
                 partitioning.append(Condition(lambda a: bounds[i - 1] <= a < bounds[i],
                                               "{} <= x < {}".format(bounds[i - 1], bounds[i])))
@@ -236,7 +230,6 @@ class DecisionTreeClassifier(object):
         best_partitioning = []
 
         for partitioning in possible_partitionings:
-            print("225", len(partitioning))
             buckets = self.perform_partitioning(dataset, column, partitioning)
 
             ig = self.info_gain(parent_entropy, buckets, len(dataset))
