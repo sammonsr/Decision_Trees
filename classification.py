@@ -52,7 +52,7 @@ class DecisionTreeClassifier(object):
         Predicts the class label of samples X
 
     """
-    NUM_BUCKETS = 3
+    MAX_BUCKETS = 3
 
     def __init__(self):
         self.is_trained = False
@@ -142,6 +142,7 @@ class DecisionTreeClassifier(object):
     def build_tree(self, dataset, root):
         best_column = self.find_best_attribute(dataset)
         best_partitioning = self.find_best_partitioning(dataset, best_column)
+        print("145", len(best_partitioning))
         children_datasets = self.perform_partitioning(dataset, best_column, best_partitioning)
 
         for i in range(len(children_datasets)):
@@ -196,6 +197,9 @@ class DecisionTreeClassifier(object):
         # Iterate through every attribute in dataset
         for i in range(num_features):
             partitioning = self.find_best_partitioning(dataset, i)
+            print("****************")
+            print("200", len(partitioning))
+            print(dataset)
             buckets = self.perform_partitioning(dataset, i, partitioning)
             info_gain = self.info_gain(self.h(dataset), buckets, len(dataset))
             if info_gain > best_info_gain:
@@ -204,15 +208,20 @@ class DecisionTreeClassifier(object):
 
         return best_feature
 
+    def calc_num_buckets(self, dataset):
+        return min(len(dataset), self.MAX_BUCKETS)
+
     def find_best_partitioning(self, dataset, column):
         assert column < len(dataset[0])
+
+        num_buckets = self.calc_num_buckets(dataset)
 
         parent_entropy = self.h(dataset)
 
         # We want a list not a set? np.distinct?
         sorted_col = set([a[column] for a in dataset])
 
-        possible_partitioning_bounds = list(itertools.combinations(sorted_col, self.NUM_BUCKETS - 1))
+        possible_partitioning_bounds = list(itertools.combinations(sorted_col, num_buckets - 1))
 
         possible_partitionings = [generate_partitioning(bounds) for bounds in possible_partitioning_bounds]
 
@@ -220,6 +229,7 @@ class DecisionTreeClassifier(object):
         best_partitioning = []
 
         for partitioning in possible_partitionings:
+            print("225", len(partitioning))
             buckets = self.perform_partitioning(dataset, column, partitioning)
 
             ig = self.info_gain(parent_entropy, buckets, len(dataset))
@@ -231,9 +241,9 @@ class DecisionTreeClassifier(object):
         return best_partitioning
 
     def perform_partitioning(self, dataset, column, partitioning):
-        assert self.NUM_BUCKETS == len(partitioning)
+        assert 0 < len(partitioning) <= self.MAX_BUCKETS
 
-        buckets = [[] for _ in range(self.NUM_BUCKETS)]
+        buckets = [[] for _ in range(len(partitioning))]
 
         for i in range(len(dataset)):
             for j in range(len(partitioning)):

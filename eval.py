@@ -47,13 +47,11 @@ class Evaluator(object):
             class_labels = np.unique(annotation)
         
         confusion = np.zeros((len(class_labels), len(class_labels)), dtype=np.int)
-        
-        
-        #######################################################################
-        #                 ** TASK 3.1: COMPLETE THIS METHOD **
-        #######################################################################
-        
-        
+
+        for i in range(len(confusion)):
+            for j in range(len(confusion[i])):
+                pass
+
         return confusion
     
     
