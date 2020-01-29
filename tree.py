@@ -29,7 +29,7 @@ class Intermediate(Node):
 
 
         max_child_depth = -1
-        for child in self.children:
+        for child in root.children:
             max_child_depth = max(max_child_depth, self.get_depth(child))
 
 
@@ -43,8 +43,7 @@ class Intermediate(Node):
             return 1
 
         num_leafs = 0
-
-        for child in self.children:
+        for child in root.children:
             num_leafs = num_leafs + self.get_num_leafs(child)
 
         return num_leafs

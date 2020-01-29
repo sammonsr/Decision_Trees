@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 
 from tree import Leaf, Intermediate
 
+NODE_TEXT = "*"
+
 decision_node = dict(boxstyle="sawtooth", fc="0.8")
 leaf_node = dict(boxstyle="round4", fc="0.8")
 arrow_args = dict(arrowstyle="<-")
@@ -25,17 +27,17 @@ class Visualiser:
         center_point = (self.x_off + (1.0 + float(num_leafs)) / 2.0 / self.tree_width, self.y_off)
 
         self.plot_mid_text(center_point, parent_point, node_txt)
-        self.plot_node("node text", center_point, parent_point, decision_node)
+        self.plot_node(NODE_TEXT, center_point, parent_point, decision_node)
 
         self.y_off = self.y_off - 1 / self.tree_depth
 
         for child in tree.children:
             if type(child) is Intermediate:
-                self.plot_tree(center_point, "another string", tree=child)
+                self.plot_tree(center_point, "I to I lambda", tree=child)
             else:
                 self.x_off = self.x_off + 1 / self.tree_width
-                self.plot_node("Value of leaf", (self.x_off, self.y_off), center_point, leaf_node)
-                self.plot_mid_text((self.x_off, self.y_off), center_point, "Lambda")
+                self.plot_node("LEAF", (self.x_off, self.y_off), center_point, leaf_node)
+                self.plot_mid_text((self.x_off, self.y_off), center_point, "I to L lambda")
         self.y_off = self.y_off + 1 / self.tree_depth
 
     def plot_node(self, node_txt, center_point, parent_point, node_type):
