@@ -129,17 +129,14 @@ class DecisionTreeClassifier(object):
         return [self.label_dict[self.traverse_tree(row, root)] for row in x]
 
     def traverse_tree(self, row, current_node):
-        value = row[current_node.attr_index]
         if type(current_node) is Leaf:
             return current_node.value
 
-        print("**********************")
-        print("Children:", current_node.children)
+        value = row[current_node.attr_index]
+
         for i in range(len(current_node.children)):
             child = current_node.children[i]
-            print("Condition:", current_node.branch_conditions[i](value))
             if current_node.branch_conditions[i](value):
-                print("Recurse")
                 return self.traverse_tree(row, child)
 
     def build_tree(self, dataset, root):
@@ -157,7 +154,7 @@ class DecisionTreeClassifier(object):
             if all_same_class:
                 class_value = child_dataset[0][class_index]
                 root.add_child(Leaf(class_value), best_partitioning[i])
-                return
+                continue
 
             # Non-Leaf case
             intermediate = Intermediate([], i)
