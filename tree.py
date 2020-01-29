@@ -17,9 +17,6 @@ class Intermediate(Node):
         self.children.append(child)
         self.branch_conditions.append(condition)
 
-    def pass_condition(self, value):
-        return self.condition(value)
-
     def get_depth(self, root=None):
         if root is None:
             root = self

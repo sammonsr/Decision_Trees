@@ -11,26 +11,9 @@ import math
 
 import numpy as np
 
+from condition import Condition
 from tree import Leaf, Intermediate
 from visualiser import Visualiser
-
-
-def generate_partitioning(bounds):
-    partitioning = []
-
-    # First partition (upper bounded)
-    partitioning.append(lambda a: a < bounds[0])
-
-    # Intermediate partitions (upper and lower bounded)
-    for i in range(1, len(bounds)):
-        if i == len(bounds) - 1:
-            partitioning.append(lambda a: bounds[i - 1] <= a < bounds[i])
-
-    # Last partition (lower bounded)
-    partitioning.append(lambda a: a >= bounds[len(bounds) - 1])
-
-    return partitioning
-
 
 def create_tree():
     return Intermediate([], -1)
@@ -98,7 +81,7 @@ class DecisionTreeClassifier(object):
         # set a flag so that we know that the classifier has been trained
         self.is_trained = True
 
-        vis = Visualiser(self.decision_tree)
+        vis = Visualiser(self.decision_tree, self.label_dict)
         vis.create_plot()
 
         return self
@@ -140,7 +123,7 @@ class DecisionTreeClassifier(object):
 
         for i in range(len(current_node.children)):
             child = current_node.children[i]
-            if current_node.branch_conditions[i](value):
+            if current_node.branch_conditions[i].condition_lambda(value):
                 return self.traverse_tree(row, child)
 
     def build_tree(self, dataset, root):
@@ -215,6 +198,26 @@ class DecisionTreeClassifier(object):
     def calc_num_buckets(self, dataset):
         return min(len(dataset), self.MAX_BUCKETS)
 
+    def generate_partitioning(self, bounds):
+        partitioning = []
+        print(self.label_dict)
+
+        # First partition (upper bounded)
+        partitioning.append(Condition(lambda a: a < bounds[0], "x < {}".format(bounds[0])))
+
+        # Intermediate partitions (upper and lower bounded)
+        for i in range(1, len(bounds)):
+            print(bounds)
+            if i == len(bounds) - 1:
+                partitioning.append(Condition(lambda a: bounds[i - 1] <= a < bounds[i],
+                                              "{} <= x < {}".format(bounds[i - 1], bounds[i])))
+
+        # Last partition (lower bounded)
+        partitioning.append(
+            Condition(lambda a: a >= bounds[len(bounds) - 1], "x >= {}".format(bounds[len(bounds) - 1])))
+
+        return partitioning
+
     def find_best_partitioning(self, dataset, column):
         assert column < len(dataset[0])
 
@@ -227,7 +230,7 @@ class DecisionTreeClassifier(object):
 
         possible_partitioning_bounds = list(itertools.combinations(sorted_col, num_buckets - 1))
 
-        possible_partitionings = [generate_partitioning(bounds) for bounds in possible_partitioning_bounds]
+        possible_partitionings = [self.generate_partitioning(bounds) for bounds in possible_partitioning_bounds]
 
         best_ig = -1
         best_partitioning = []
@@ -252,7 +255,7 @@ class DecisionTreeClassifier(object):
         for i in range(len(dataset)):
             for j in range(len(partitioning)):
                 in_partition = partitioning[j]
-                if in_partition(dataset[i][column]):
+                if in_partition.condition_lambda(dataset[i][column]):
                     buckets[j].append(dataset[i])
 
         return buckets

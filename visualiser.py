@@ -9,8 +9,9 @@ leaf_node = dict(boxstyle="round4", fc="0.8")
 arrow_args = dict(arrowstyle="<-")
 
 class Visualiser:
-    def __init__(self, tree):
+    def __init__(self, tree, label_dict):
         self.whole_tree = tree
+        self.label_dict = label_dict
         self.tree_width = tree.get_num_leafs()
         self.tree_depth = tree.get_depth()
         self.x_off = -0.5 / self.tree_width
@@ -31,13 +32,14 @@ class Visualiser:
 
         self.y_off = self.y_off - 1 / self.tree_depth
 
-        for child in tree.children:
+        for i in range(len(tree.children)):
+            child = tree.children[i]
             if type(child) is Intermediate:
-                self.plot_tree(center_point, "I to I lambda", tree=child)
+                self.plot_tree(center_point, tree.branch_conditions[i].condition_str, tree=child)
             else:
                 self.x_off = self.x_off + 1 / self.tree_width
-                self.plot_node("LEAF", (self.x_off, self.y_off), center_point, leaf_node)
-                self.plot_mid_text((self.x_off, self.y_off), center_point, "I to L lambda")
+                self.plot_node(self.label_dict[child.value], (self.x_off, self.y_off), center_point, leaf_node)
+                self.plot_mid_text((self.x_off, self.y_off), center_point, tree.branch_conditions[i].condition_str)
         self.y_off = self.y_off + 1 / self.tree_depth
 
     def plot_node(self, node_txt, center_point, parent_point, node_type):
