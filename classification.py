@@ -123,14 +123,37 @@ class DecisionTreeClassifier(object):
 
         for i in range(len(current_node.children)):
             child = current_node.children[i]
+            if current_node.branch_conditions[i].condition_str == "x":
+                print("")
             if current_node.branch_conditions[i].condition_lambda(value):
                 return self.traverse_tree(row, child)
+
+    def prune(self, root, dataset):
+        parent = root.parent
+        label_votes = {}
+
+        max_num_votes = -1
+        most_popular = None
+
+        for row in dataset:
+            label = row[-1]
+            if label not in label_votes.keys():
+                label_votes[label] = 1
+            else:
+                label_votes[label] = label_votes[label] + 1
+            if label_votes[label] > max_num_votes:
+                max_num_votes = label_votes[label]
+                most_popular = label
+
+        parent.replace_child(root.index_in_parent, Leaf(most_popular))
+
 
     def build_tree(self, dataset, root):
         best_column = self.find_best_attribute(dataset)
         best_partitioning = self.find_best_partitioning(dataset, best_column)
         children_datasets = self.perform_partitioning(dataset, best_column, best_partitioning)
 
+        print("new level")
         for i in range(len(children_datasets)):
             child_dataset = children_datasets[i]
 
@@ -138,7 +161,13 @@ class DecisionTreeClassifier(object):
             class_index = len(dataset[0]) - 1
             all_same_class = all([d[class_index] == child_dataset[0][class_index] for d in child_dataset])
 
-            if all_same_class:
+            print(len(child_dataset))
+            if len(child_dataset) == 0:
+                # Not enough data to split on parent so prune
+                self.prune(root, dataset)
+                print("bad")
+                return
+            elif all_same_class:
                 class_value = child_dataset[0][class_index]
                 root.add_child(Leaf(class_value), best_partitioning[i])
                 continue

@@ -36,7 +36,7 @@ class Visualiser:
             child = tree.children[i]
             if type(child) is Intermediate:
                 self.plot_tree(center_point, tree.branch_conditions[i].condition_str, tree=child)
-            else:
+            elif child.value is not None:
                 self.x_off = self.x_off + 1 / self.tree_width
                 self.plot_node(self.label_dict[child.value], (self.x_off, self.y_off), center_point, leaf_node)
                 self.plot_mid_text((self.x_off, self.y_off), center_point, tree.branch_conditions[i].condition_str)

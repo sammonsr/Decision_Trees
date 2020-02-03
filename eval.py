@@ -90,7 +90,7 @@ class Evaluator(object):
         return (p, macro_p)
 
     def class_precision(self, conf, class_index):
-        class_col_sum = conf[:, class_index].sum()
+        class_col_sum = np.sum(conf[:, class_index])
         return conf[class_index, class_index] / class_col_sum
 
 

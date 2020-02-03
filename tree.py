@@ -12,10 +12,19 @@ class Intermediate(Node):
         self.branch_conditions = []
         self.children = children
         self.attr_index = attr_index
+        self.parent = None
+        self.index_in_parent = -1
+
+    # Changing child inplace maintains original condition
+    def replace_child(self, index, new_child):
+        self.children[index] = new_child
 
     def add_child(self, child, condition):
         self.children.append(child)
         self.branch_conditions.append(condition)
+        child.parent = self
+
+        child.index_in_parent = len(self.children) - 1
 
     def get_depth(self, root=None):
         if root is None:

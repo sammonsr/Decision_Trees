@@ -6,36 +6,26 @@
 
 import numpy as np
 
+import dataset
 from classification import DecisionTreeClassifier
 from eval import Evaluator
 
 if __name__ == "__main__":
     print("Loading the training dataset...");
-    x = np.array([
-            [5,7,1],
-            [4,6,2],
-            [4,6,3], 
-            [1,3,1], 
-            [2,1,2], 
-            [5,2,6]
-        ])
-    
-    y = np.array(["A", "A", "A", "C", "C", "C"])
-    
+
+    dataset = dataset.Dataset()
+
+    x, y = dataset.load_data('train_full.txt')
+
+
     print("Training the decision tree...")
     classifier = DecisionTreeClassifier()
     classifier = classifier.train(x, y)
 
     print("Loading the test set...")
-    
-    x_test = np.array([
-            [1,6,3], 
-            [0,5,5], 
-            [1,5,0], 
-            [2,4,2]
-        ])
-    
-    y_test = np.array(["A", "A", "C", "C"])
+
+    x_test, y_test = dataset.load_data('test.txt')
+
     
     predictions = classifier.predict(x_test)
     print("Predictions: {}".format(predictions))
