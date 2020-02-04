@@ -113,7 +113,7 @@ class DecisionTreeClassifier(object):
         # predictions = np.zeros((x.shape[0],), dtype=np.object)
 
         root = self.decision_tree
-        return [self.label_dict[self.traverse_tree(row, root)] for row in x]
+        return np.array([self.label_dict[self.traverse_tree(row, root)] for row in x])
 
     def traverse_tree(self, row, current_node):
         if type(current_node) is Leaf:
@@ -123,8 +123,6 @@ class DecisionTreeClassifier(object):
 
         for i in range(len(current_node.children)):
             child = current_node.children[i]
-            if current_node.branch_conditions[i].condition_str == "x":
-                print("")
             if current_node.branch_conditions[i].condition_lambda(value):
                 return self.traverse_tree(row, child)
 
@@ -151,12 +149,17 @@ class DecisionTreeClassifier(object):
     def build_tree(self, dataset, root):
         best_column = self.find_best_attribute(dataset)
         best_partitioning = self.find_best_partitioning(dataset, best_column)
+
+        # If we can't partition then prune parent
+        if len(best_partitioning) == 0:
+            self.prune(root, dataset)
+            return
+
         children_datasets = self.perform_partitioning(dataset, best_column, best_partitioning)
 
         # Ensure root node has attr_index set
         root.attr_index = best_column
 
-        print("new level")
         for i in range(len(children_datasets)):
             child_dataset = children_datasets[i]
 
@@ -164,11 +167,9 @@ class DecisionTreeClassifier(object):
             class_index = len(dataset[0]) - 1
             all_same_class = all([d[class_index] == child_dataset[0][class_index] for d in child_dataset])
 
-            print(len(child_dataset))
             if len(child_dataset) == 0:
                 # Not enough data to split on parent so prune
                 self.prune(root, dataset)
-                print("bad")
                 return
             elif all_same_class:
                 class_value = child_dataset[0][class_index]
@@ -215,6 +216,8 @@ class DecisionTreeClassifier(object):
         # Iterate through every attribute in dataset
         for i in range(num_features):
             partitioning = self.find_best_partitioning(dataset, i)
+            if len(partitioning) == 0:
+                continue
             buckets = self.perform_partitioning(dataset, i, partitioning)
             info_gain = self.info_gain(self.h(dataset), buckets, len(dataset))
             if info_gain > best_info_gain:
@@ -262,6 +265,8 @@ class DecisionTreeClassifier(object):
         best_partitioning = []
 
         for partitioning in possible_partitionings:
+            if not 0 < len(partitioning) <= self.MAX_BUCKETS:
+                continue
             buckets = self.perform_partitioning(dataset, column, partitioning)
 
             ig = self.info_gain(parent_entropy, buckets, len(dataset))
@@ -273,8 +278,6 @@ class DecisionTreeClassifier(object):
         return best_partitioning
 
     def perform_partitioning(self, dataset, column, partitioning):
-        if not 0 < len(partitioning) <= self.MAX_BUCKETS:
-            print("")
         assert 0 < len(partitioning) <= self.MAX_BUCKETS
 
         buckets = [[] for _ in range(len(partitioning))]
