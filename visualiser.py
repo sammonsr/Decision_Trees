@@ -28,7 +28,7 @@ class Visualiser:
         center_point = (self.x_off + (1.0 + float(num_leafs)) / 2.0 / self.tree_width, self.y_off)
 
         self.plot_mid_text(center_point, parent_point, node_txt)
-        self.plot_node(NODE_TEXT, center_point, parent_point, decision_node)
+        self.plot_node(tree.attr_index, center_point, parent_point, decision_node)
 
         self.y_off = self.y_off - 1 / self.tree_depth
 

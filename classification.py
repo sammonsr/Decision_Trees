@@ -36,7 +36,7 @@ class DecisionTreeClassifier(object):
         Predicts the class label of samples X
 
     """
-    MAX_BUCKETS = 3
+    MAX_BUCKETS = 2
 
     def __init__(self):
         self.is_trained = False
@@ -153,6 +153,9 @@ class DecisionTreeClassifier(object):
         best_partitioning = self.find_best_partitioning(dataset, best_column)
         children_datasets = self.perform_partitioning(dataset, best_column, best_partitioning)
 
+        # Ensure root node has attr_index set
+        root.attr_index = best_column
+
         print("new level")
         for i in range(len(children_datasets)):
             child_dataset = children_datasets[i]
@@ -173,7 +176,7 @@ class DecisionTreeClassifier(object):
                 continue
 
             # Non-Leaf case
-            intermediate = Intermediate([], i)
+            intermediate = Intermediate([], best_column)
             root.add_child(intermediate, best_partitioning[i])
 
             self.build_tree(child_dataset, intermediate)
@@ -184,7 +187,7 @@ class DecisionTreeClassifier(object):
         sum = 0
 
         for label in labels:
-            rows = [a for a in labels if a == label]
+            rows = [s for s in samples if s[-1] == label]
             pc = len(rows) / len(samples)
             sum -= pc * math.log2(pc)
 
@@ -270,6 +273,8 @@ class DecisionTreeClassifier(object):
         return best_partitioning
 
     def perform_partitioning(self, dataset, column, partitioning):
+        if not 0 < len(partitioning) <= self.MAX_BUCKETS:
+            print("")
         assert 0 < len(partitioning) <= self.MAX_BUCKETS
 
         buckets = [[] for _ in range(len(partitioning))]
