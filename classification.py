@@ -127,6 +127,8 @@ class DecisionTreeClassifier(object):
                 return self.traverse_tree(row, child)
 
     def prune(self, root, dataset):
+        assert root.parent is not None, "Cannot prune the root"
+
         parent = root.parent
         label_votes = {}
 
