@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 
 class Dataset:
@@ -16,6 +18,20 @@ class Dataset:
         y = np.array(y)
 
         return x, y
+
+    def load_split_data(self, filename, k, seed=None):
+        xs, ys = self.load_data(filename)
+        random.seed(seed)
+
+        subsets = [[([], [])]] * k
+
+        for i in range(len(xs)):
+            subset_index = random.randrange(k)
+            subsets[subset_index][0].append(xs[i])
+            subsets[subset_index][1].append(ys[i])
+
+        return subsets
+
 
 if __name__ == "__main__":
     print(Dataset().load_data('toy.txt'))
