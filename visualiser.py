@@ -8,6 +8,7 @@ decision_node = dict(boxstyle="sawtooth", fc="0.8")
 leaf_node = dict(boxstyle="round4", fc="0.8")
 arrow_args = dict(arrowstyle="<-")
 
+
 class Visualiser:
     def __init__(self, tree, label_dict):
         self.whole_tree = tree
@@ -54,7 +55,6 @@ class Visualiser:
             bbox=node_type,
             arrowprops=arrow_args
         )
-
 
     def plot_mid_text(self, center_point, parent_point, txt):
         x_mid = (parent_point[0] - center_point[0]) / 2 + center_point[0]

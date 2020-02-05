@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     print("Training the decision tree...")
     classifier = DecisionTreeClassifier()
-    classifier = classifier.train(x, y)
+    classifier = classifier.train(x, y, show_diagram=True)
 
     print("Loading the test set...")
 
@@ -30,7 +30,7 @@ if __name__ == "__main__":
     predictions = classifier.predict(x_test)
     print("Predictions: {}".format(predictions))
     
-    classes = ["A", "C"];
+    classes = list(set(y_test))
     
     print("Evaluating test predictions...")
     evaluator = Evaluator()
