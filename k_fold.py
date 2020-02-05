@@ -1,15 +1,17 @@
+import scipy
+
 from classification import DecisionTreeClassifier
 from dataset import Dataset
 from eval import Evaluator
 import numpy as np
-
+from scipy import stats
 
 # TODO: Fix this!
 def perform_k_fold(k, classifier_class, filename, random_seed=None, testing=False):
     subsets = Dataset().load_split_data(filename, k, random_seed)
     evaluator = Evaluator()
     accuracies = []
-
+    models = []
     best_model = None
 
     for i in range(k):
@@ -46,10 +48,11 @@ def perform_k_fold(k, classifier_class, filename, random_seed=None, testing=Fals
             best_model = classifier
 
         accuracies.append(accuracy)
+        models.append(classifier)
 
     accuracies = np.array(accuracies)
 
-    return accuracies.sum() / k, np.std(accuracies), best_model
+    return accuracies.sum() / k, np.std(accuracies), best_model, models
 
 
 def print_metrics(confusion):
@@ -71,13 +74,18 @@ if __name__ == "__main__":
     classifier_classic = classifier_classic.train(x, y)
     predictions_classic = classifier_classic.predict(x_test)
 
-    avg_acc, sd, classifier_kfold = perform_k_fold(10, DecisionTreeClassifier, 'train_full.txt', random_seed=500,
+    avg_acc, sd, classifier_kfold, models = perform_k_fold(10, DecisionTreeClassifier, 'train_full.txt', random_seed=500,
                                                    testing=False)
+
+    # get most popular predictions
+    forest_predictions = stats.mode(np.array([model.predict(x_test) for model in models]))
+
     predictions_kfold = classifier_kfold.predict(x_test)
 
     # Test both models on test.txt
     confusion_classic = evaluator.confusion_matrix(predictions_classic, y_test)
     confusion_kfold = evaluator.confusion_matrix(predictions_kfold, y_test)
+    confusion_forest = evaluator.confusion_matrix(forest_predictions[0][0], y_test)
 
     # Compare metrics
     print("Classic classifier:")
@@ -85,3 +93,6 @@ if __name__ == "__main__":
     print()
     print("k-fold classifier:")
     print_metrics(confusion_kfold)
+    print()
+    print("Forest classifier:")
+    print_metrics(confusion_forest)
