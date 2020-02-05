@@ -43,7 +43,7 @@ class DecisionTreeClassifier(object):
         self.decision_tree = None
         self.label_dict = {}
 
-    def train(self, x, y):
+    def train(self, x, y, show_diagram=False):
         """ Constructs a decision tree classifier from data
 
         Parameters
@@ -81,8 +81,9 @@ class DecisionTreeClassifier(object):
         # set a flag so that we know that the classifier has been trained
         self.is_trained = True
 
-        vis = Visualiser(self.decision_tree, self.label_dict)
-        vis.create_plot()
+        if show_diagram:
+            vis = Visualiser(self.decision_tree, self.label_dict)
+            vis.create_plot()
 
         return self
 

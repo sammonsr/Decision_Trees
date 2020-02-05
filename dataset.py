@@ -23,12 +23,19 @@ class Dataset:
         xs, ys = self.load_data(filename)
         random.seed(seed)
 
-        subsets = [[([], [])]] * k
+        subsets = []
+        for i in range(k):
+            subsets.append(([], []))
 
-        for i in range(len(xs)):
-            subset_index = random.randrange(k)
-            subsets[subset_index][0].append(xs[i])
-            subsets[subset_index][1].append(ys[i])
+        shuffled_order = list(range(len(xs)))
+        random.shuffle(shuffled_order)
+
+        for i in range(len(shuffled_order)):
+            chosen_index = shuffled_order[i]
+            subset_index = i % k
+
+            subsets[subset_index][0].append(xs[chosen_index])
+            subsets[subset_index][1].append(ys[chosen_index])
 
         return subsets
 
