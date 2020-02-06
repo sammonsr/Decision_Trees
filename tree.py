@@ -31,12 +31,12 @@ class Intermediate(Node):
         if level == MAX_DEPTH:
             return ""
 
-        ret = "+ IntermediateNode [Column: {}, Entropy: {:.2f}, Conditions: {}, Distribution: {}]".format(
+        ret = ("\t" * level) + "+ IntermediateNode [Column: {}, Entropy: {:.2f}, Conditions: {}, Distribution: {}]".format(
             self.attr_index, self.entropy, list(map(lambda a: a.condition_str, self.branch_conditions)),
             self.class_dist).replace("b'", "'") + "\n"
 
         for i, child in enumerate(self.children):
-            ret += ("\t" * (level + 1)) + child.__str__(level=level + 1, label_dict=label_dict)
+            ret +=  child.__str__(level=level + 1, label_dict=label_dict)
         return ret
 
     # Changing child inplace maintains original condition

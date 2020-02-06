@@ -304,8 +304,6 @@ class DecisionTreeClassifier(object):
         return best_partitioning
 
     def perform_partitioning(self, dataset, column, partitioning):
-        # assert 0 < len(partitioning) <= self.MAX_BUCKETS
-
         buckets = [[] for _ in range(len(partitioning))]
 
         for i in range(len(dataset)):
