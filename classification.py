@@ -83,7 +83,7 @@ class DecisionTreeClassifier(object):
         # set a flag so that we know that the classifier has been trained
         self.is_trained = True
 
-        self.alternative_prune(Dataset().load_data('validation.txt'))
+        self.prune_tree(Dataset().load_data('validation.txt'))
 
         if show_diagram:
             print(self.decision_tree.__str__(label_dict=self.label_dict))
@@ -320,12 +320,12 @@ class DecisionTreeClassifier(object):
         1.) Find all leaf nodes in the tree
         2.) For each leaf node, check if their parent only has leaves as children
             - If the parent node only has leaf children, prune the parent using the majority vote method.
-              If this improves the accuracy of the decision tree (post_acc > pre_acc), class prune again on the new tree
-              If this doesn't improve the accuracy of the decision tree, move onto the next leaf
-            - If not, move onto the next leaf node
+              If this improves the accuracy of the decision tree (post_acc > pre_acc), call prune again on the new tree
+              If this doesn't improve the accuracy of the decision tree, move onto the next leaf and repeat step 2
+            - If not, move onto the next leaf node and repeat step 2
     '''
 
-    def alternative_prune(self, validation_dataset):
+    def prune_tree(self, validation_dataset):
         leaf_nodes = self.get_leaf_nodes(self.decision_tree)
 
         for leaf in leaf_nodes:
@@ -372,7 +372,8 @@ class DecisionTreeClassifier(object):
             # If improved, call prune on whole tree
             # Else try and prune using next leaves
             if post_acc > pre_acc:
-                self.alternative_prune(validation_dataset)
+                print("Prune success!!!")
+                self.prune_tree(validation_dataset)
                 return
             else:
                 # Restore state of tree before attempted prune, and move onto next leaf
@@ -390,3 +391,17 @@ class DecisionTreeClassifier(object):
             result.extend(self.get_leaf_nodes(child))
 
         return result
+
+    def get_deepest_leaf(self, root, depth=0):
+        if type(root) is Leaf:
+            return root, depth
+
+        deepest = None
+        max_depth = -1
+        for child in root.children:
+            deepest_child, deepest_child_depth = self.get_deepest_leaf(child, depth=depth + 1)
+            if deepest_child_depth > max_depth:
+                max_depth = deepest_child_depth
+                deepest = deepest_child
+
+        return deepest, max_depth

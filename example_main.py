@@ -30,7 +30,7 @@ if __name__ == "__main__":
     predictions = classifier.predict(x_test)
     print("Predictions: {}".format(predictions))
     
-    classes = list(set(y_test))
+    classes = sorted(list(set(y_test)))
     
     print("Evaluating test predictions...")
     evaluator = Evaluator()

@@ -30,7 +30,6 @@ class Evaluator(object):
 
         if not class_labels:
             class_labels = np.unique(annotation)
-
         confusion = np.zeros((len(class_labels), len(class_labels)), dtype=np.int)
 
         pred_annons = list(zip(prediction, annotation))
