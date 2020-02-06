@@ -15,7 +15,6 @@ from condition import Condition
 from dataset import Dataset
 from eval import Evaluator
 from tree import Leaf, Intermediate
-from visualiser import Visualiser
 
 
 def create_tree():
@@ -39,7 +38,7 @@ class DecisionTreeClassifier(object):
         Predicts the class label of samples X
 
     """
-    MAX_BUCKETS = 2
+    DEFAULT_BUCKETS = 2
 
     def __init__(self):
         self.is_trained = False
@@ -132,7 +131,7 @@ class DecisionTreeClassifier(object):
                 return self.traverse_tree(row, child)
 
     # If one of the buckets is empty, convert node into a leaf
-    def trim(self, root, dataset):
+    def parent_to_leaf(self, root, dataset):
         assert root.parent is not None, "Cannot prune the root"
 
         parent = root.parent
@@ -160,51 +159,13 @@ class DecisionTreeClassifier(object):
         evaluator = Evaluator()
         return evaluator.accuracy(evaluator.confusion_matrix(predictions, y_test))
 
-    # Return child that was pruned with it's index in parent
-    def prune(self, root, validation_dataset):
-        label_votes = {}
-        max_num_votes = -1
-        most_popular = None
-
-        # Check accuracy of tree
-        pre_acc = self.check_accuracy(validation_dataset)
-
-        # Prune tree
-        for i, child in enumerate(root.children):
-            assert type(child) is Leaf, "All children of node to be pruned must be leaves"
-
-            value = child.value
-
-            if value not in label_votes.keys():
-                label_votes[value] = 1
-            else:
-                label_votes[value] = label_votes[value] + 1
-
-            if label_votes[value] > max_num_votes:
-                max_num_votes = label_votes[value]
-                most_popular = value
-
-        root.parent.replace_child(root.index_in_parent, Leaf(most_popular))
-
-        # Check accuracy of pruned tree
-        post_acc = self.check_accuracy(validation_dataset)
-
-        # If improved, call prune tree again
-        # Else stop and restore tree
-        if post_acc > pre_acc:
-            self.prune_tree(validation_dataset)
-            print("Keeping pruned tree")
-        else:
-            root.parent.replace_child(root.index_in_parent, root)
-            print("Restoring tree")
-
     def build_tree(self, dataset, root):
         best_column = self.find_best_attribute(dataset)
         best_partitioning = self.find_best_partitioning(dataset, best_column)
 
-        # If we can't partition then prune parent
+        # If we can't partition then convert parent to leaf
         if len(best_partitioning) == 0:
-            self.trim(root, dataset)
+            self.parent_to_leaf(root, dataset)
             return
 
         children_datasets = self.perform_partitioning(dataset, best_column, best_partitioning)
@@ -223,7 +184,7 @@ class DecisionTreeClassifier(object):
 
             if len(child_dataset) == 0:
                 # Not enough data to split on parent so prune
-                self.trim(root, dataset)
+                self.parent_to_leaf(root, dataset)
                 return
             elif all_same_class:
                 class_value = child_dataset[0][class_index]
@@ -291,7 +252,7 @@ class DecisionTreeClassifier(object):
         return best_feature
 
     def calc_num_buckets(self, dataset):
-        return min(len(dataset), self.MAX_BUCKETS)
+        return min(len(dataset), self.DEFAULT_BUCKETS)
 
     def generate_partitioning(self, bounds):
         partitioning = []
@@ -330,8 +291,8 @@ class DecisionTreeClassifier(object):
         best_partitioning = []
 
         for partitioning in possible_partitionings:
-            if not 0 < len(partitioning) <= self.MAX_BUCKETS:
-                continue
+            if not 0 < len(partitioning) <= self.DEFAULT_BUCKETS:
+                pass
             buckets = self.perform_partitioning(dataset, column, partitioning)
 
             ig = self.info_gain(parent_entropy, buckets, len(dataset))
@@ -343,7 +304,7 @@ class DecisionTreeClassifier(object):
         return best_partitioning
 
     def perform_partitioning(self, dataset, column, partitioning):
-        assert 0 < len(partitioning) <= self.MAX_BUCKETS
+        # assert 0 < len(partitioning) <= self.MAX_BUCKETS
 
         buckets = [[] for _ in range(len(partitioning))]
 
@@ -355,6 +316,15 @@ class DecisionTreeClassifier(object):
 
         return buckets
 
+    ''' Prune works by performing the following steps:
+        1.) Find all leaf nodes in the tree
+        2.) For each leaf node, check if their parent only has leaves as children
+            - If the parent node only has leaf children, prune the parent using the majority vote method.
+              If this improves the accuracy of the decision tree (post_acc > pre_acc), class prune again on the new tree
+              If this doesn't improve the accuracy of the decision tree, move onto the next leaf
+            - If not, move onto the next leaf node
+    '''
+
     def alternative_prune(self, validation_dataset):
         leaf_nodes = self.get_leaf_nodes(self.decision_tree)
 
@@ -365,6 +335,7 @@ class DecisionTreeClassifier(object):
             parent = leaf.parent
             grandparent = parent.parent
 
+            # Variables used for majority vote procedure
             label_votes = {}
             max_num_votes = -1
             most_popular = None
@@ -372,7 +343,7 @@ class DecisionTreeClassifier(object):
             # Prune tree
             carry_on_with_prune = True
             for i, child in enumerate(parent.children):
-                # All children of node to be pruned must be leaves
+                # Don't try and prune the parent if it has any non-leaf children
                 if type(child) is not Leaf:
                     carry_on_with_prune = False
                     break
@@ -389,8 +360,10 @@ class DecisionTreeClassifier(object):
                     most_popular = value
 
             if not carry_on_with_prune:
+                # Dont prune this parent because it has some non-leaf children
                 continue
 
+            # Prune parent using majority vote
             grandparent.replace_child(parent.index_in_parent, Leaf(most_popular))
 
             # Check accuracy of pruned tree
@@ -398,35 +371,12 @@ class DecisionTreeClassifier(object):
 
             # If improved, call prune on whole tree
             # Else try and prune using next leaves
-            # print("Accuracy changed by ", (post_acc - pre_acc))
             if post_acc > pre_acc:
-                # print("Keeping pruned tree")
-                self.prune_tree(validation_dataset)
+                self.alternative_prune(validation_dataset)
+                return
             else:
-                # Stop pruning
-                # print("Stop pruning")
+                # Restore state of tree before attempted prune, and move onto next leaf
                 grandparent.replace_child(parent.index_in_parent, parent)
-
-    def restore_tree(self):
-        leaf_nodes = self.get_leaf_nodes(self.decision_tree)
-
-        for i, leaf in enumerate(leaf_nodes):
-            if leaf.old_value is not None:
-                leaf.restore_old_value()
-                leaf.old_value = None
-
-    def prune_tree(self, validation_dataset):
-        deepest_leaf, _ = self.get_deepest_leaf(self.decision_tree)
-        parent_node = deepest_leaf.parent
-        all_leaf_children = True
-
-        for child in parent_node.children:
-            if type(child) is not Leaf:
-                all_leaf_children = False
-                break
-
-        if all_leaf_children:
-            self.prune(parent_node, validation_dataset)
 
     def get_leaf_nodes(self, root, result=None):
         if result is None:
@@ -440,17 +390,3 @@ class DecisionTreeClassifier(object):
             result.extend(self.get_leaf_nodes(child))
 
         return result
-
-    def get_deepest_leaf(self, root, depth=0):
-        if type(root) is Leaf:
-            return root, depth
-
-        deepest = None
-        max_depth = -1
-        for child in root.children:
-            deepest_child, deepest_child_depth = self.get_deepest_leaf(child, depth=depth + 1)
-            if deepest_child_depth > max_depth:
-                max_depth = deepest_child_depth
-                deepest = deepest_child
-
-        return deepest, max_depth
