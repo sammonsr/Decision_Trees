@@ -202,9 +202,9 @@ class DecisionTreeClassifier(object):
     def get_class_dist(self, dataset):
         dist = {}
         uniq_labels = set(map(lambda v: self.label_dict[v], [row[-1] for row in dataset]))
-        num_rows = len(dataset)
+
         for label in uniq_labels:
-            dist[label] = num_rows
+            dist[label] = len([a for a in dataset if self.label_dict[a[-1]] == label])
         return dist
 
     # Calculate entropy for samples
@@ -372,7 +372,6 @@ class DecisionTreeClassifier(object):
             # If improved, call prune on whole tree
             # Else try and prune using next leaves
             if post_acc > pre_acc:
-                print("Prune success!!!")
                 self.prune_tree(validation_dataset)
                 return
             else:
