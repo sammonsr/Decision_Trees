@@ -1,4 +1,4 @@
-MAX_DEPTH = 4
+MAX_DEPTH = 400
 
 
 class Node: pass

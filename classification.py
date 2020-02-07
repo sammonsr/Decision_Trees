@@ -83,9 +83,10 @@ class DecisionTreeClassifier(object):
         # set a flag so that we know that the classifier has been trained
         self.is_trained = True
 
-        self.prune_tree(Dataset().load_data('validation.txt'))
+        #self.prune(Dataset().load_data('validation.txt'))
 
         if show_diagram:
+            print("The maximum depth is: ", self.get_max_depth())
             print(self.decision_tree.__str__(label_dict=self.label_dict))
 
         return self
@@ -315,21 +316,22 @@ class DecisionTreeClassifier(object):
         return buckets
 
     ''' Prune works by performing the following steps:
-        1.) Find all leaf nodes in the tree
-        2.) For each leaf node, check if their parent only has leaves as children
-            - If the parent node only has leaf children, prune the parent using the majority vote method.
+        1.) Find all leaf nodes at max depth
+        2.) For each leaf node,
+            - Prune the parent using the majority vote method.
               If this improves the accuracy of the decision tree (post_acc > pre_acc), call prune again on the new tree
               If this doesn't improve the accuracy of the decision tree, move onto the next leaf and repeat step 2
-            - If not, move onto the next leaf node and repeat step 2
     '''
+    def prune(self, validation_dataset):
+        tree_before = self.decision_tree.__str__(label_dict=self.label_dict)
 
-    def prune_tree(self, validation_dataset):
-        leaf_nodes = self.get_leaf_nodes(self.decision_tree)
+        max_depth = self.get_max_depth()
+        lowest_leafs = self.get_leaf_nodes_at_depth(max_depth)
 
-        for leaf in leaf_nodes:
-            # Check accuracy of tree
-            pre_acc = self.check_accuracy(validation_dataset)
+        # Check accuracy of tree
+        pre_acc = self.check_accuracy(validation_dataset)
 
+        for leaf in lowest_leafs:
             parent = leaf.parent
             grandparent = parent.parent
 
@@ -339,13 +341,7 @@ class DecisionTreeClassifier(object):
             most_popular = None
 
             # Prune tree
-            carry_on_with_prune = True
             for i, child in enumerate(parent.children):
-                # Don't try and prune the parent if it has any non-leaf children
-                if type(child) is not Leaf:
-                    carry_on_with_prune = False
-                    break
-
                 value = child.value
 
                 if value not in label_votes.keys():
@@ -357,48 +353,52 @@ class DecisionTreeClassifier(object):
                     max_num_votes = label_votes[value]
                     most_popular = value
 
-            if not carry_on_with_prune:
-                # Dont prune this parent because it has some non-leaf children
-                continue
-
             # Prune parent using majority vote
             grandparent.replace_child(parent.index_in_parent, Leaf(most_popular))
+
+            # check that tree changed
+            tree_after = self.decision_tree.__str__(label_dict=self.label_dict)
+
+            assert tree_before != tree_after
 
             # Check accuracy of pruned tree
             post_acc = self.check_accuracy(validation_dataset)
 
             # If improved, call prune on whole tree
             # Else try and prune using next leaves
-            if post_acc > pre_acc:
-                self.prune_tree(validation_dataset)
+            if post_acc >= pre_acc:
+                self.prune(validation_dataset)
                 return
             else:
                 # Restore state of tree before attempted prune, and move onto next leaf
                 grandparent.replace_child(parent.index_in_parent, parent)
 
-    def get_leaf_nodes(self, root, result=None):
-        if result is None:
-            result = []
+    def get_max_depth(self, root=None, depth=0):
+        depths = []
+        if root is None:
+            root = self.decision_tree
 
         if type(root) is Leaf:
-            result.append(root)
-            return result
+            depths.append(depth)
+        else:
+            for child in root.children:
+                depths.append(self.get_max_depth(child, depth + 1))
 
-        for child in root.children:
-            result.extend(self.get_leaf_nodes(child))
+        return max(depths)
 
-        return result
+    def get_leaf_nodes_at_depth(self, depth, root=None, current_depth=0):
+        leafs = []
 
-    def get_deepest_leaf(self, root, depth=0):
+        if root is None:
+            root = self.decision_tree
+
         if type(root) is Leaf:
-            return root, depth
+            if depth == current_depth:
+                return [root]
+            else:
+                return []
 
-        deepest = None
-        max_depth = -1
         for child in root.children:
-            deepest_child, deepest_child_depth = self.get_deepest_leaf(child, depth=depth + 1)
-            if deepest_child_depth > max_depth:
-                max_depth = deepest_child_depth
-                deepest = deepest_child
+            leafs.extend(self.get_leaf_nodes_at_depth(depth, child, current_depth + 1))
 
-        return deepest, max_depth
+        return leafs
