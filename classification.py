@@ -318,9 +318,9 @@ class DecisionTreeClassifier(object):
     ''' Prune works by performing the following steps:
         1.) Find all leaf nodes at max depth
         2.) For each leaf node,
-            - Prune the parent using the majority vote method.
-              If this improves the accuracy of the decision tree (post_acc > pre_acc), call prune again on the new tree
-              If this doesn't improve the accuracy of the decision tree, move onto the next leaf and repeat step 2
+            Prune the parent using the majority vote method.
+              - If the new accuracy is more than or equal to the previous accuracy, call prune again on the new tree
+              - Otherwise, restore the the tree to it's state before the prune, and move onto the next leaf and repeat step 2
     '''
     def prune(self, validation_dataset):
         tree_before = self.decision_tree.__str__(label_dict=self.label_dict)
@@ -364,7 +364,7 @@ class DecisionTreeClassifier(object):
             # Check accuracy of pruned tree
             post_acc = self.check_accuracy(validation_dataset)
 
-            # If improved, call prune on whole tree
+            # If accuracy >= previous accuracy, call prune on the new tree
             # Else try and prune using next leaves
             if post_acc >= pre_acc:
                 self.prune(validation_dataset)
